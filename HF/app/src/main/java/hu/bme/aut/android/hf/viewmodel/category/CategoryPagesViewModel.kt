@@ -28,7 +28,7 @@ class CategoryPagesViewModel @Inject constructor(
             .get()
             .addOnSuccessListener { documents ->
                 val products = documents.mapNotNull { it.toObject(ProductModel::class.java) }
-                _productList.value = products.shuffled().take(5)
+                _productList.value = products
             }
     }
 }

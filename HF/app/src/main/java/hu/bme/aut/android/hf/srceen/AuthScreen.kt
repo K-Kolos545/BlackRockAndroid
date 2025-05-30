@@ -36,7 +36,7 @@ fun AuthScreen(modifier: Modifier = Modifier, navController: NavHostController) 
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Start your shopping journey",
+            text = "Start your journey about Spirits",
             style = TextStyle(
                 fontSize = 24.sp,
                 fontFamily = FontFamily.Monospace,
@@ -47,15 +47,6 @@ fun AuthScreen(modifier: Modifier = Modifier, navController: NavHostController) 
         )
         Spacer(modifier = Modifier.height(20.dp))
 
-        Text(
-            text = "The best shits are here",
-            style = TextStyle(
-                textAlign = TextAlign.Center
-            ),
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
 
         Button(onClick = {
             navController.navigate("login")
