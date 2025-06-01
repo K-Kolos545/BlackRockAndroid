@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -25,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
@@ -32,16 +34,23 @@ import hu.bme.aut.android.hf.GlobalNavigation
 import hu.bme.aut.android.hf.model.CategoryModel
 import hu.bme.aut.android.hf.model.ProductModel
 import hu.bme.aut.android.hf.ui.theme.CardColor
-import hu.bme.aut.android.hf.viewmodel.product.LoadRandomProduct
+import hu.bme.aut.android.hf.viewmodel.product.RandomProductViewModel
 
 @Composable
 fun RandomProductView(
     modifier: Modifier = Modifier,
+    viewModel: RandomProductViewModel = hiltViewModel()
     ) {
 
-    val randomProducts = remember { mutableStateOf<List<ProductModel>>(emptyList()) }
+//    val randomProducts = remember { mutableStateOf<List<ProductModel>>(emptyList()) }
+//
+//    LoadRandomProduct(randomProducts)
 
-    LoadRandomProduct(randomProducts)
+    val randomProducts = viewModel.randomProductList.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.fetchRandomProducts()
+    }
 
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy (20.dp),

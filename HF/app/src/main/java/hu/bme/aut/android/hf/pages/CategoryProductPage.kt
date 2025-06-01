@@ -50,7 +50,7 @@ fun CategoryProductsPage(
     ) {
 
         Text(
-            text = "category", style = TextStyle(
+            text = "${categoryId} whiskey", style = TextStyle(
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Bold,
             ),

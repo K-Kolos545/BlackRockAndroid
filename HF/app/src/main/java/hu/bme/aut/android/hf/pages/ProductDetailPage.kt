@@ -31,6 +31,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +47,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -62,56 +65,46 @@ import com.google.maps.android.compose.*
 import hu.bme.aut.android.hf.ui.theme.BrownButton
 import hu.bme.aut.android.hf.ui.theme.BrownIcon
 import hu.bme.aut.android.hf.ui.theme.CardColor
-import hu.bme.aut.android.hf.viewmodel.product.LoadCommentUserNames
-import hu.bme.aut.android.hf.viewmodel.product.ObserveFavoriteStatus
-import hu.bme.aut.android.hf.viewmodel.product.ObserveProduct
-import hu.bme.aut.android.hf.viewmodel.product.ObserveTastedStatus
+import hu.bme.aut.android.hf.viewmodel.product.ProductDetailPageViewModel
 
 @Composable
 fun ProductDetailPage(
     modifier: Modifier = Modifier,
-    productId : String
+    productId : String,
+    viewModel: ProductDetailPageViewModel = hiltViewModel()
 
 ) {
 
-    var product by remember {
-        mutableStateOf(ProductModel())
-    }
-    var context = LocalContext.current
-    val userId = Firebase.auth.currentUser?.uid
-    var text by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val product by viewModel.product.collectAsState()
+    val favoriteStates by viewModel.favoriteStates.collectAsState()
+    val tastedStates by viewModel.tastedStates.collectAsState()
+    val commentNames by viewModel.userNames.collectAsState()
+
     val focusManager = LocalFocusManager.current
+    var text by remember { mutableStateOf("") }
 
-    val firestore = Firebase.firestore
-    val productRef = firestore.collection("data").document("stock")
-        .collection("products")
-        .document(productId)
+    val isFavorite = favoriteStates[productId] ?: false
+    val isTasted = tastedStates[productId] ?: false
 
-
-//    val product = remember { mutableStateOf(ProductModel()) }
-    val isFavorite = remember { mutableStateOf(false) }
-    val isTasted = remember { mutableStateOf(false) }
-    val commentNames = remember { mutableStateMapOf<String, String>() }
 
 // Call external logic hooks
-    ObserveProduct(productId) { updatedProduct ->
-        product = updatedProduct
+    LaunchedEffect(productId) {
+        viewModel.observeProduct(productId)
+        viewModel.fetchFavoriteState(productId)
+        viewModel.fetchTastedState(productId)
     }
 
-    ObserveFavoriteStatus(productId) { status ->
-        isFavorite.value = status
-    }
 
-    ObserveTastedStatus(productId) { status ->
-        isTasted.value = status
-    }
-
-    LoadCommentUserNames(product.comments.keys, commentNames) { userId, name ->
-        commentNames[userId] = name
+    LaunchedEffect(product?.comments) {
+        product?.let {
+            viewModel.loadUserNames(it.comments.keys)
+        }
     }
 
 
 
+    product?.let{product ->
 
 
     Column(
@@ -183,12 +176,7 @@ fun ProductDetailPage(
                 Button(
 
                     onClick = {
-                        if (isTasted.value) {
-                            AppUtil.removeFromTasted(context, productId)
-                        } else {
-                            AppUtil.addItemToTasted(context, productId)
-                        }
-                        isTasted.value = !isTasted.value
+                        viewModel.toggleTasted(productId)
                     },
                     modifier = Modifier
                         .width(250.dp)
@@ -202,19 +190,14 @@ fun ProductDetailPage(
                     Spacer(modifier.width(8.dp))
                     IconButton(
                         onClick = {
-                            if (isTasted.value) {
-                                AppUtil.removeFromTasted(context, product.id)
-                            } else {
-                                AppUtil.addItemToTasted(context, product.id)
-                            }
-                            isTasted.value = !isTasted.value
+                            viewModel.toggleTasted(productId)
                         },
 
                         ) {
                         Icon(
-                            imageVector = if (isTasted.value) Icons.Default.CheckCircle else Icons.Default.Check, //or u can get it from drawable
+                            imageVector = if (isTasted) Icons.Default.CheckCircle else Icons.Default.Check, //or u can get it from drawable
                             contentDescription = "toggle tasted",
-                            tint = if (isFavorite.value) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.secondary
+                            tint = if (isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.secondary
                         )
                     }
                 }
@@ -223,19 +206,14 @@ fun ProductDetailPage(
 
                 IconButton(
                     onClick = {
-                        if (isFavorite.value) {
-                            AppUtil.removeFromFavorite(context, productId)
-                        } else {
-                            AppUtil.addItemToFavorite(context, productId)
-                        }
-                        isFavorite.value = !isFavorite.value
+                        viewModel.toggleFavorite(productId)
                     },
 
                     ) {
                     Icon(
-                        imageVector = if (isFavorite.value) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                         contentDescription = "Toggle favorite",
-                        tint = if (isFavorite.value) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.secondary
+                        tint = if (isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.secondary
                     )
                 }
 
@@ -390,6 +368,7 @@ fun ProductDetailPage(
 
 
 
+}
 @Composable
 fun ProductLocationMap(product: ProductModel) {
     if (product.latitude == 0.0 && product.longitude == 0.0) {
@@ -420,3 +399,4 @@ fun ProductLocationMap(product: ProductModel) {
     }
 
 }
+

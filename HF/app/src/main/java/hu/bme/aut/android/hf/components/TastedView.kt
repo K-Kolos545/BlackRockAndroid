@@ -20,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,6 +32,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
@@ -40,41 +42,43 @@ import hu.bme.aut.android.hf.GlobalNavigation
 import hu.bme.aut.android.hf.model.ProductModel
 import hu.bme.aut.android.hf.ui.theme.BrownIcon
 import hu.bme.aut.android.hf.ui.theme.CardColor
-import hu.bme.aut.android.hf.viewmodel.favorites.LoadFavoriteStatus
-import hu.bme.aut.android.hf.viewmodel.favorites.LoadProductData
-import hu.bme.aut.android.hf.viewmodel.tasted.LoadProductDataTasted
-import hu.bme.aut.android.hf.viewmodel.tasted.LoadTastedStatus
-import hu.bme.aut.android.hf.viewmodel.tasted.LoadTastedStatus
+import hu.bme.aut.android.hf.viewmodel.favorites.FavoritesComponentsViewModel
+import hu.bme.aut.android.hf.viewmodel.tasted.TastedViewModel
+
 
 @Composable
 fun WishListView(
     modifier: Modifier = Modifier,
     productId: String,
+    viewModel: TastedViewModel = hiltViewModel()
 
 ) {
 
 
 
-    var product = remember {
-        mutableStateOf(ProductModel())
+    val products = viewModel.tastedProducts.collectAsState()
+    val tastedStates = viewModel.tastedStates.collectAsState()
+
+    val product = products.value[productId]
+    val isTasted = tastedStates.value[productId] ?: false
+
+
+    LaunchedEffect(productId) {
+        viewModel.fetchProductData(productId)
+        viewModel.fetchTastedState(productId)
     }
-    var context = LocalContext.current
-    var isTasted = remember { mutableStateOf(false) }
-
-
-    LoadProductDataTasted(productId, product)
-    LoadTastedStatus(productId, isTasted)
 
 
 
+product?.let{
 
     Card (
         modifier = modifier
             .padding(8.dp)
             .fillMaxWidth()
             .clickable{
-                if (product.value.id.isNotEmpty()) {
-                    GlobalNavigation.navController.navigate("product-details/${product.value.id}")
+                if (product.id.isNotEmpty()) {
+                    GlobalNavigation.navController.navigate("product-details/${product.id}")
                 }
                 // If the product ID is empty, we can show a message or handle it accordingly
 
@@ -94,8 +98,8 @@ fun WishListView(
         ){
 
             AsyncImage(
-                model = product.value.images.firstOrNull(),
-                contentDescription = product.value.title,
+                model = product.images.firstOrNull(),
+                contentDescription = product.title,
                 modifier = Modifier
                     .height(100.dp)
                     .width(100.dp)
@@ -107,7 +111,7 @@ fun WishListView(
                     .weight(1f)
             ){
                 Text(
-                    text = product.value.title,
+                    text = product.title,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -118,21 +122,17 @@ fun WishListView(
 
             IconButton(
                 onClick = {
-                    if (isTasted.value) {
-                        AppUtil.removeFromTasted(context, product.value.id)
-                    } else {
-                        AppUtil.addItemToTasted(context, product.value.id)
-                    }
-                    isTasted.value = !isTasted.value
+                    viewModel.toggleTasted(productId)
                 },
 
                 ) {
                 Icon(
-                    imageVector = if (isTasted.value) Icons.Default.CheckCircle else Icons.Default.Check, //or u can get it from drawable
+                    imageVector = if (isTasted) Icons.Default.CheckCircle else Icons.Default.Check, //or u can get it from drawable
                     contentDescription = "toggle tasted",
                     tint = MaterialTheme.colorScheme.secondary,
                 )
             }
         }
     }
+}
 }

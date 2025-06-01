@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +27,8 @@ class ProfileViewModel @Inject constructor(
     private val _comments = MutableStateFlow<List<Pair<String, String>>>(emptyList())
     val comments: StateFlow<List<Pair<String, String>>> = _comments
 
+    private var nameListenerRegistration: ListenerRegistration? = null
+
     init {
         fetchUserName()
         fetchUserEmail()
@@ -33,13 +36,25 @@ class ProfileViewModel @Inject constructor(
     }
 
     private fun fetchUserName() {
-        auth.currentUser?.uid?.let { uid ->
-            firestore.collection("users").document(uid).get()
-                .addOnSuccessListener { doc ->
-                    _name.value = doc.getString("name") ?: ""
+        val uid = auth.currentUser?.uid ?: return
+
+        nameListenerRegistration?.remove() // remove old listener if it exists
+
+        nameListenerRegistration = firestore.collection("users")
+            .document(uid)
+            .addSnapshotListener { snapshot, _ ->
+                val name = snapshot?.getString("name") ?: ""
+                viewModelScope.launch {
+                    _name.emit(name)
                 }
-        }
+            }
+
     }
+    override fun onCleared() {
+        super.onCleared()
+        nameListenerRegistration?.remove()
+    }
+
 
     private fun fetchUserEmail() {
         auth.currentUser?.uid?.let { uid ->

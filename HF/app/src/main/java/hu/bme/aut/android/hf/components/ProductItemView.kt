@@ -23,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,22 +44,32 @@ import hu.bme.aut.android.hf.AppUtil
 import hu.bme.aut.android.hf.GlobalNavigation
 import hu.bme.aut.android.hf.model.ProductModel
 import androidx.compose.ui.graphics.Color
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.firebase.auth.auth
 import hu.bme.aut.android.hf.ui.theme.BrownIcon
 import hu.bme.aut.android.hf.ui.theme.CardColor
-import hu.bme.aut.android.hf.viewmodel.favorites.LoadFavoriteStatus
-import hu.bme.aut.android.hf.viewmodel.product.LoadFavorite
+import hu.bme.aut.android.hf.viewmodel.favorites.FavoritesComponentsViewModel
+
+//import hu.bme.aut.android.hf.viewmodel.favorites.LoadFavoriteStatus
+//import hu.bme.aut.android.hf.viewmodel.product.LoadFavorite
 
 //import hu.bme.aut.android.hf.ui.theme.Brown
 
 @Composable
-fun ProductItemView(modifier: Modifier = Modifier, product: ProductModel) {
+fun ProductItemView(
+    modifier: Modifier = Modifier,
+    product: ProductModel,
+    viewModel: FavoritesComponentsViewModel = hiltViewModel()
+) {
+    val favoriteStates = viewModel.favoriteStates.collectAsState()
+    val isFavorite = favoriteStates.value[product.id] ?: false
 
     var context = LocalContext.current
-    val isFavorite = remember { mutableStateOf(false) }
 
+    LaunchedEffect(product.id) {
+        viewModel.fetchFavoriteState(product.id)
+    }
 
-    LoadFavorite(productId = product.id, isFavorite = isFavorite)
 
 
     Card (
@@ -106,19 +117,14 @@ fun ProductItemView(modifier: Modifier = Modifier, product: ProductModel) {
 
                 IconButton(
                     onClick = {
-                        if (isFavorite.value) {
-                            AppUtil.removeFromFavorite(context, product.id)
-                        } else {
-                            AppUtil.addItemToFavorite(context, product.id)
-                        }
-                        isFavorite.value = !isFavorite.value
+                        viewModel.toggleFavorite(product.id)
                     },
 
                     ) {
                     Icon(
-                        imageVector = if (isFavorite.value) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                         contentDescription = "Toggle favorite",
-                        tint = if (isFavorite.value) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.secondary
+                        tint = if (isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.secondary
                     )
                 }
             }

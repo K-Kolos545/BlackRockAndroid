@@ -1,27 +1,34 @@
 package hu.bme.aut.android.hf.viewmodel.product
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
-import com.google.firebase.Firebase
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.firestore
+
+import androidx.lifecycle.ViewModel
 import hu.bme.aut.android.hf.model.ProductModel
 import kotlin.collections.List
-import com.google.firebase.auth.auth
-import com.google.firebase.firestore.firestore
+import com.google.firebase.firestore.FirebaseFirestore
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import javax.inject.Inject
 
-@Composable
-fun LoadRandomProduct(randomProducts: MutableState<List<ProductModel>>) {
-    LaunchedEffect(Unit) {
-        Firebase.firestore.collection("data")
+
+@HiltViewModel
+class RandomProductViewModel @Inject constructor(
+    private val firestore: FirebaseFirestore
+): ViewModel(){
+    private val _randomProductList = MutableStateFlow<List<ProductModel>>(emptyList())
+    val randomProductList:  StateFlow<List<ProductModel>> get() = _randomProductList
+
+    init {
+        fetchRandomProducts()
+    }
+
+    fun fetchRandomProducts(){
+        firestore.collection("data")
             .document("stock")
             .collection("products")
             .get()
-            .addOnSuccessListener { result ->
-                val allProducts = result.documents.mapNotNull {
-                    it.toObject(ProductModel::class.java)
-                }
-                randomProducts.value = allProducts.shuffled().take(5)
+            .addOnSuccessListener { documents ->
+                val products = documents.mapNotNull { it.toObject(ProductModel::class.java) }
+                _randomProductList.value = products.shuffled().take(5)
             }
     }
 }

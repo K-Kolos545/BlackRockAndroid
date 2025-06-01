@@ -21,6 +21,7 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.google.firebase.firestore.FirebaseFirestore
 import hu.bme.aut.android.hf.AppUtil.searchProducts
+import hu.bme.aut.android.hf.GlobalNavigation.navController
 import hu.bme.aut.android.hf.components.*
 import hu.bme.aut.android.hf.model.ProductModel
 import hu.bme.aut.android.hf.ui.theme.BackGroundColor
@@ -28,7 +29,10 @@ import hu.bme.aut.android.hf.ui.theme.CardColor
 import kotlinx.coroutines.tasks.await
 
 @Composable
-fun HomePage(modifier: Modifier = Modifier, navController: NavController) {
+fun HomePage(
+    modifier: Modifier = Modifier,
+    navController: NavController
+) {
     val searchActive = remember { mutableStateOf(false) }
 
     Box(

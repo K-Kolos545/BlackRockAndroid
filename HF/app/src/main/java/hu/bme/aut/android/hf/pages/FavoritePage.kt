@@ -21,19 +21,18 @@ import hu.bme.aut.android.hf.model.UserModel
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
+import androidx.hilt.navigation.compose.hiltViewModel
 import hu.bme.aut.android.hf.components.FavoriteItemView
-import hu.bme.aut.android.hf.viewmodel.favorites.ObserveUserFavorites
+import hu.bme.aut.android.hf.viewmodel.favorites.FavoritesPageViewModel
 
 
 @Composable
-fun FavoritePage(modifier: Modifier = Modifier) {
-
-    val userModel = remember {
-        mutableStateOf(UserModel())
-    }
-
-    ObserveUserFavorites(userModel)
-
+fun FavoritePage(
+    modifier: Modifier = Modifier,
+    viewModel: FavoritesPageViewModel = hiltViewModel()
+) {
+    val userState = viewModel.user.collectAsState()
 
     Column(
         modifier = modifier
@@ -48,9 +47,11 @@ fun FavoritePage(modifier: Modifier = Modifier) {
             color = MaterialTheme.colorScheme.onBackground,
         )
 
-        LazyColumn {
-            items(userModel.value.favoriteItems.toList(), key = {it}){productId ->
-                FavoriteItemView(productId = productId)
+        userState.value?.let { user ->
+            LazyColumn {
+                items(user.favoriteItems.toList(), key = { it }) { productId ->
+                    FavoriteItemView(productId = productId)
+                }
             }
         }
     }

@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,18 +25,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import hu.bme.aut.android.hf.viewmodel.LoadUserFirstName
+import androidx.hilt.navigation.compose.hiltViewModel
+import hu.bme.aut.android.hf.viewmodel.HeaderViewModel
+import hu.bme.aut.android.hf.viewmodel.product.RandomProductViewModel
 
 @Composable
 fun HeaderView(
     modifier: Modifier = Modifier,
-    onSearchClick: () -> Unit
+    onSearchClick: () -> Unit,
+    viewModel: HeaderViewModel = hiltViewModel()
 ){
 
 
-    val nameState = remember { mutableStateOf("") }
+    val nameState by viewModel.header.collectAsState()
 
-    LoadUserFirstName(nameState)
+    LaunchedEffect(Unit) {
+        viewModel.fetchUserName()
+    }
+
+    val displayName = if (nameState.isNotBlank()) "Welcome back, $nameState" else "Welcome!"
+
 
     Row (
         modifier = Modifier.fillMaxWidth(),
@@ -52,7 +61,7 @@ fun HeaderView(
 //            horizontalAlignment = Alignment.Start
         )
         {
-            Text(text = "Welcome back ${nameState.value}",
+            Text(text = displayName,
                 style = TextStyle(
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold

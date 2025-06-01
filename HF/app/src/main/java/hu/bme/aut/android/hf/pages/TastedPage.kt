@@ -20,18 +20,21 @@ import hu.bme.aut.android.hf.model.UserModel
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
+import androidx.hilt.navigation.compose.hiltViewModel
+import hu.bme.aut.android.hf.components.FavoriteItemView
 import hu.bme.aut.android.hf.components.WishListView
-import hu.bme.aut.android.hf.viewmodel.tasted.ObserveUserTasted
+import hu.bme.aut.android.hf.viewmodel.favorites.FavoritesPageViewModel
+import hu.bme.aut.android.hf.viewmodel.tasted.TastedPageViewModel
 
 
 @Composable
-fun WishListPage(modifier: Modifier = Modifier) {
+fun WishListPage(
+    modifier: Modifier = Modifier,
+    viewModel: TastedPageViewModel = hiltViewModel()
+) {
 
-    val userModel = remember {
-        mutableStateOf(UserModel())
-    }
-
-    ObserveUserTasted(userModel)
+    val userState = viewModel.user.collectAsState()
 
     Column(
         modifier = modifier
@@ -46,9 +49,11 @@ fun WishListPage(modifier: Modifier = Modifier) {
             color = MaterialTheme.colorScheme.onBackground,
         )
 
-        LazyColumn {
-            items(userModel.value.tastedItems.toList(), key = {it}){productId ->
-                WishListView(productId = productId)
+        userState.value?.let { user ->
+            LazyColumn {
+                items(user.tastedItems.toList(), key = { it }) { productId ->
+                    WishListView(productId = productId)
+                }
             }
         }
     }

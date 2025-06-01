@@ -73,7 +73,8 @@ fun EditProfilePage(
                 viewModel.saveNameToAuthAndFirestore(
                     onSuccess = {
                         showToast(context, "Name updated")
-                        navController.navigate("profile")
+                        navController.popBackStack()
+
 //
                      },
                     onFailure = { showToast(context, "Failed: ${it.message}") }
